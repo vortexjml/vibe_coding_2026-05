@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { Home, ListChecks, Clock, User } from 'lucide-react'
+import { Home, ListChecks, UtensilsCrossed, Clock, User } from 'lucide-react'
 
 const tabs = [
   { to: '/', icon: Home, label: '홈' },
   { to: '/routines', icon: ListChecks, label: '루틴' },
+  { to: '/tracking', icon: UtensilsCrossed, label: '기록' },
   { to: '/history', icon: Clock, label: '히스토리' },
   { to: '/profile', icon: User, label: '프로필' },
 ]

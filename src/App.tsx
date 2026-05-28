@@ -7,6 +7,7 @@ import SessionPage from './pages/SessionPage'
 import RoutinesPage from './pages/RoutinesPage'
 import RoutineEditPage from './pages/RoutineEditPage'
 import HistoryPage from './pages/HistoryPage'
+import TrackingPage from './pages/TrackingPage'
 import ProfilePage from './pages/ProfilePage'
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="/routines/new" element={<RoutineEditPage />} />
           <Route path="/routines/:id/edit" element={<RoutineEditPage />} />
+          <Route path="/tracking" element={<TrackingPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

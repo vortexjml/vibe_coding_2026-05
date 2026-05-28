@@ -1,13 +1,15 @@
 import { create } from 'zustand'
 import { db } from '../db'
 import { defaultExercises } from '../data/exercises'
-import type { Exercise, Routine, Session, SetRecord } from '../types'
+import type { Exercise, Routine, Session, SetRecord, MealLog, WaterLog } from '../types'
 
 interface WorkoutStore {
   exercises: Exercise[]
   routines: Routine[]
   sessions: Session[]
   activeSession: Session | null
+  mealLogs: MealLog[]
+  waterLogs: WaterLog[]
 
   init: () => Promise<void>
   loadRoutines: () => Promise<void>
@@ -24,6 +26,11 @@ interface WorkoutStore {
   removeSet: (exerciseId: string, setIndex: number) => void
   finishSession: () => Promise<void>
   cancelSession: () => void
+
+  addMealLog: (data: Omit<MealLog, 'id' | 'createdAt'>) => Promise<void>
+  deleteMealLog: (id: string) => Promise<void>
+  addWaterLog: (ml: number) => Promise<void>
+  removeLastWaterLog: () => Promise<void>
 }
 
 function uuid() {
@@ -35,6 +42,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   routines: [],
   sessions: [],
   activeSession: null,
+  mealLogs: [],
+  waterLogs: [],
 
   init: async () => {
     const count = await db.exercises.count()
@@ -45,6 +54,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     set({ exercises })
     await get().loadRoutines()
     await get().loadSessions()
+    // Task 2.4 — 식단/수분 로드
+    const today = new Date().toISOString().slice(0, 10)
+    const mealLogs = await db.mealLogs.where('date').equals(today).toArray()
+    const waterLogs = await db.waterLogs.where('date').equals(today).toArray()
+    set({ mealLogs, waterLogs })
   },
 
   loadRoutines: async () => {
@@ -134,5 +148,40 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
 
   cancelSession: () => {
     set({ activeSession: null })
+  },
+
+  // Task 2.2 — 식단 액션
+  addMealLog: async (data) => {
+    const log: MealLog = { ...data, id: uuid(), createdAt: Date.now() }
+    await db.mealLogs.add(log)
+    const mealLogs = await db.mealLogs.where('date').equals(data.date).toArray()
+    set({ mealLogs })
+  },
+
+  deleteMealLog: async (id) => {
+    const log = get().mealLogs.find(m => m.id === id)
+    await db.mealLogs.delete(id)
+    const date = log?.date ?? new Date().toISOString().slice(0, 10)
+    const mealLogs = await db.mealLogs.where('date').equals(date).toArray()
+    set({ mealLogs })
+  },
+
+  // Task 2.3 — 수분 액션
+  addWaterLog: async (ml) => {
+    const date = new Date().toISOString().slice(0, 10)
+    const log: WaterLog = { id: uuid(), date, ml, createdAt: Date.now() }
+    await db.waterLogs.add(log)
+    const waterLogs = await db.waterLogs.where('date').equals(date).toArray()
+    set({ waterLogs })
+  },
+
+  removeLastWaterLog: async () => {
+    const { waterLogs } = get()
+    if (waterLogs.length === 0) return
+    const last = waterLogs.reduce((a, b) => a.createdAt > b.createdAt ? a : b)
+    await db.waterLogs.delete(last.id)
+    const date = last.date
+    const updated = await db.waterLogs.where('date').equals(date).toArray()
+    set({ waterLogs: updated })
   },
 }))

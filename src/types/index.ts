@@ -42,3 +42,21 @@ export interface Session {
   finishedAt: number | null
   sets: SetRecord[]
 }
+
+export interface MealLog {
+  id: string
+  date: string       // 'YYYY-MM-DD'
+  name: string
+  calories: number
+  protein: number    // g
+  carbs: number      // g
+  fat: number        // g
+  createdAt: number
+}
+
+export interface WaterLog {
+  id: string
+  date: string       // 'YYYY-MM-DD'
+  ml: number
+  createdAt: number
+}
