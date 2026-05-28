@@ -25,7 +25,40 @@ export default function HomePage() {
 
   const now = new Date()
   const hour = now.getHours()
-  const greeting = hour < 12 ? '좋은 아침이에요 ☀️' : hour < 18 ? '안녕하세요 👋' : '오늘도 수고했어요 🌙'
+  const dayIndex = now.getDay() // 0~6, 요일로 rotate
+
+  const morningLines = [
+    '아침부터 이기는 하루 💪',
+    '기상 완료, 이제 운동할 시간 🔥',
+    '일어났으면 반은 성공이에요 ⚡',
+    '오늘도 강해지는 중 🏋️',
+    '새벽을 이긴 사람이 하루를 이겨요 🌅',
+    '몸은 거짓말 안 해요, 지금 시작해요 💥',
+    '오늘의 땀이 내일의 근육이 돼요 🔥',
+  ]
+  const afternoonLines = [
+    '지금 이 순간을 놓치지 마세요 💥',
+    '한 세트가 인생을 바꿉니다 🏋️',
+    '몸이 변하는 건 오늘부터예요 🔥',
+    '핑계 말고 바벨 잡아요 💪',
+    '지금 움직이면 저녁이 뿌듯해요 ⚡',
+    '누군가는 지금 이 시간에 운동해요 🔥',
+    '후회는 나중에, 운동은 지금 💥',
+  ]
+  const eveningLines = [
+    '오늘 운동, 내일의 나를 위해 🌟',
+    '하루의 마무리는 땀으로 💪',
+    '자기 전 마지막 챕터, 운동 🔥',
+    '오늘 한 번 더 한 사람이 내일 다르게 살아요 ⚡',
+    '밤에 운동하는 사람은 진심인 거예요 🔥',
+    '오늘도 강해졌나요? 지금 확인해요 💥',
+    '피곤해도 10분만, 그게 습관이 돼요 🏋️',
+  ]
+
+  const greeting =
+    hour < 12 ? morningLines[dayIndex % morningLines.length]
+    : hour < 18 ? afternoonLines[dayIndex % afternoonLines.length]
+    : eveningLines[dayIndex % eveningLines.length]
 
   return (
     <div className="px-5 pt-8 pb-28 space-y-7">
