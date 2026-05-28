@@ -1,16 +1,69 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useWorkoutStore } from '../store/workoutStore'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, BarChart2 } from 'lucide-react'
 import type { Session } from '../types'
+import {
+  LineChart, Line, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
 export default function HistoryPage() {
-  const { sessions } = useWorkoutStore()
+  const { sessions, exercises } = useWorkoutStore()
   const [year, setYear] = useState(() => new Date().getFullYear())
   const [month, setMonth] = useState(() => new Date().getMonth())
   const [selected, setSelected] = useState<string | null>(null)
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>('')
+
+  // Task 1.1 — 기록이 있는 종목만 추출
+  const exercisesWithRecords = useMemo(() => {
+    const ids = new Set<string>()
+    sessions.forEach(s => s.sets.forEach(set => ids.add(set.exerciseId)))
+    return [...ids].map(id => ({
+      id,
+      name: exercises.find(e => e.id === id)?.name ?? id,
+    }))
+  }, [sessions, exercises])
+
+  useEffect(() => {
+    if (!selectedExerciseId && exercisesWithRecords.length > 0) {
+      setSelectedExerciseId(exercisesWithRecords[0].id)
+    }
+  }, [exercisesWithRecords, selectedExerciseId])
+
+  // Task 1.2 — 날짜별 최고무게
+  const maxWeightData = useMemo(() => {
+    if (!selectedExerciseId) return []
+    const byDate: Record<string, number> = {}
+    sessions.forEach(s => {
+      const sets = s.sets.filter(set => set.exerciseId === selectedExerciseId)
+      if (sets.length === 0) return
+      const max = Math.max(...sets.map(set => set.weight))
+      byDate[s.date] = Math.max(byDate[s.date] ?? 0, max)
+    })
+    return Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-20)
+      .map(([date, maxWeight]) => ({ date: date.slice(5), maxWeight }))
+  }, [sessions, selectedExerciseId])
+
+  // Task 1.3 — 날짜별 총볼륨
+  const volumeData = useMemo(() => {
+    if (!selectedExerciseId) return []
+    const byDate: Record<string, number> = {}
+    sessions.forEach(s => {
+      const sets = s.sets.filter(set => set.exerciseId === selectedExerciseId)
+      if (sets.length === 0) return
+      const vol = sets.reduce((sum, set) => sum + set.weight * set.reps, 0)
+      byDate[s.date] = (byDate[s.date] ?? 0) + vol
+    })
+    return Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-20)
+      .map(([date, totalVolume]) => ({ date: date.slice(5), totalVolume }))
+  }, [sessions, selectedExerciseId])
 
   const sessionDates = new Set(sessions.map(s => s.date))
-
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const firstDay = new Date(year, month, 1).getDay()
   const cells = Array.from({ length: firstDay + daysInMonth }, (_, i) => {
@@ -20,12 +73,10 @@ export default function HistoryPage() {
   })
 
   const prevMonth = () => {
-    if (month === 0) { setYear(y => y - 1); setMonth(11) }
-    else setMonth(m => m - 1)
+    if (month === 0) { setYear(y => y - 1); setMonth(11) } else setMonth(m => m - 1)
   }
   const nextMonth = () => {
-    if (month === 11) { setYear(y => y + 1); setMonth(0) }
-    else setMonth(m => m + 1)
+    if (month === 11) { setYear(y => y + 1); setMonth(0) } else setMonth(m => m + 1)
   }
 
   const dayLabels = ['일', '월', '화', '수', '목', '금', '토']
@@ -47,13 +98,11 @@ export default function HistoryPage() {
             <ChevronRight size={18} />
           </button>
         </div>
-
         <div className="grid grid-cols-7 gap-1 mb-2">
           {dayLabels.map(d => (
             <div key={d} className="text-center text-xs font-medium text-text-secondary py-1">{d}</div>
           ))}
         </div>
-
         <div className="grid grid-cols-7 gap-1">
           {cells.map((date, i) => {
             if (!date) return <div key={i} />
@@ -66,13 +115,10 @@ export default function HistoryPage() {
                 key={date}
                 onClick={() => setSelected(isSelected ? null : date)}
                 className={`aspect-square flex items-center justify-center rounded-full text-sm font-medium transition-all relative ${
-                  isSelected
-                    ? 'bg-primary text-white shadow-sm'
-                    : isToday
-                    ? 'bg-primary-subtle text-primary font-bold'
-                    : hasSession
-                    ? 'text-text-primary hover:bg-bg-elevated'
-                    : 'text-text-secondary hover:bg-bg-elevated'
+                  isSelected ? 'bg-primary text-white shadow-sm'
+                  : isToday ? 'bg-primary-subtle text-primary font-bold'
+                  : hasSession ? 'text-text-primary hover:bg-bg-elevated'
+                  : 'text-text-secondary hover:bg-bg-elevated'
                 }`}
               >
                 {day}
@@ -85,7 +131,85 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* 선택된 날짜 세션 */}
+      {/* Task 2.1~2.4 — 진행 차트 */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart2 size={18} className="text-primary" />
+          <h2 className="text-base font-bold text-text-primary">종목별 진행 추이</h2>
+        </div>
+
+        {exercisesWithRecords.length === 0 ? (
+          // Task 2.4 — 빈 상태
+          <div className="bg-bg-surface rounded-card border border-border shadow-card p-8 text-center">
+            <p className="text-text-secondary text-sm">아직 운동 기록이 없어요</p>
+            <p className="text-text-secondary text-xs mt-1">운동을 완료하면 여기서 추이를 확인할 수 있어요</p>
+          </div>
+        ) : (
+          <div className="bg-bg-surface rounded-card border border-border shadow-card p-5 space-y-6">
+            {/* Task 2.1 — 종목 선택 드롭다운 */}
+            <select
+              value={selectedExerciseId}
+              onChange={e => setSelectedExerciseId(e.target.value)}
+              className="w-full h-11 bg-bg-elevated rounded-xl px-3 text-sm font-medium text-text-primary border border-border focus:border-border-focus focus:outline-none"
+            >
+              {exercisesWithRecords.map(ex => (
+                <option key={ex.id} value={ex.id}>{ex.name}</option>
+              ))}
+            </select>
+
+            {/* Task 2.2 — 최고무게 LineChart */}
+            <div>
+              <p className="text-xs font-semibold text-text-secondary mb-3 uppercase tracking-wide">최고 무게 (kg)</p>
+              {maxWeightData.length === 0 ? (
+                <p className="text-xs text-text-secondary text-center py-4">데이터가 없습니다</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={160}>
+                  <LineChart data={maxWeightData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748B' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontSize: 12 }}
+                      formatter={(v: number) => [`${v}kg`, '최고무게']}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="maxWeight"
+                      stroke="#2563EB"
+                      strokeWidth={2.5}
+                      dot={{ fill: '#2563EB', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Task 2.3 — 총볼륨 BarChart */}
+            <div>
+              <p className="text-xs font-semibold text-text-secondary mb-3 uppercase tracking-wide">총 볼륨 (kg)</p>
+              {volumeData.length === 0 ? (
+                <p className="text-xs text-text-secondary text-center py-4">데이터가 없습니다</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={volumeData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748B' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, fontSize: 12 }}
+                      formatter={(v: number) => [`${v.toLocaleString()}kg`, '총볼륨']}
+                    />
+                    <Bar dataKey="totalVolume" fill="#10B981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 날짜별 세션 */}
       {selected && selectedSessions.length > 0 && (
         <div>
           <h2 className="text-base font-bold text-text-primary mb-3">{selected} 운동 기록</h2>
@@ -95,8 +219,6 @@ export default function HistoryPage() {
       {selected && selectedSessions.length === 0 && (
         <p className="text-center text-text-secondary text-sm py-10">이 날은 운동 기록이 없어요</p>
       )}
-
-      {/* 최근 운동 */}
       {!selected && (
         <div>
           <h2 className="text-base font-bold text-text-primary mb-3">최근 운동</h2>
@@ -111,6 +233,7 @@ export default function HistoryPage() {
 }
 
 function SessionDetail({ session }: { session: Session }) {
+  const { exercises } = useWorkoutStore()
   const duration = session.finishedAt
     ? Math.round((session.finishedAt - session.startedAt) / 60000)
     : null
@@ -135,9 +258,10 @@ function SessionDetail({ session }: { session: Session }) {
         {exerciseIds.map(exId => {
           const exSets = session.sets.filter(s => s.exerciseId === exId)
           const maxWeight = Math.max(...exSets.map(s => s.weight))
+          const name = exercises.find(e => e.id === exId)?.name ?? exId
           return (
             <div key={exId} className="flex justify-between text-sm">
-              <span className="text-text-secondary">{exId}</span>
+              <span className="text-text-secondary">{name}</span>
               <span className="text-text-primary font-semibold">{exSets.length}세트 · 최대 {maxWeight}kg</span>
             </div>
           )
