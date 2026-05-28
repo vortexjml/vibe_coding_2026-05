@@ -8,6 +8,11 @@ React + TypeScript + Tailwind CSS 기반, IndexedDB를 통한 오프라인 우�
 ## Directory Structure
 
 ```
+docs/
+  DESIGN.md         # 디자인 시스템, 컬러 팔레트, 컴포넌트 가이드
+  ARCHITECTURE.md   # 기술 스택, 데이터 모델, 라우팅
+  PRD.md            # 제품 요구사항 및 기획
+  TEST_PLAN.md      # 테스트 계획 (추후 작성)
 src/
   components/       # 재사용 UI 컴포넌트
   pages/            # 라우트별 페이지 컴포넌트
@@ -17,6 +22,7 @@ src/
   types/            # 공유 TypeScript 타입 정의
   utils/            # 순수 유틸 함수
   data/             # 기본 운동 종목 시드 데이터
+tests/              # Vitest 테스트 파일
 ```
 
 ## Commands
