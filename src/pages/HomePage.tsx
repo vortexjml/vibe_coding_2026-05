@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useWorkoutStore } from '../store/workoutStore'
 import Button from '../components/Button'
+import WorkoutTimer from '../components/WorkoutTimer'
 import { Dumbbell, Droplets, Flame, UtensilsCrossed, Play } from 'lucide-react'
 
 export default function HomePage() {
@@ -126,6 +127,9 @@ export default function HomePage() {
             ))}
           </div>
         )}
+
+        {/* ── 타이머 ───────────────────────────── */}
+        <WorkoutTimer />
 
         {/* ── 루틴 선택 ─────────────────────────── */}
         <div>
