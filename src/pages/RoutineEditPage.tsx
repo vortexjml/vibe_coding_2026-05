@@ -59,7 +59,7 @@ export default function RoutineEditPage() {
       setNameError(true)
       return
     }
-    await addExercise({ name: newExerciseName.trim(), muscleGroup: newMuscleGroup, equipment: newEquipment })
+    await addExercise({ name: newExerciseName.trim(), muscleGroup: newMuscleGroup, equipment: newEquipment, isCustom: true })
     const freshExercises = useWorkoutStore.getState().exercises
     const newEx = freshExercises.find(e => e.name === newExerciseName.trim())
     if (newEx) addToSelected(newEx.id)
