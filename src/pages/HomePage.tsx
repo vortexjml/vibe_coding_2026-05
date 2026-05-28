@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useWorkoutStore } from '../store/workoutStore'
 import Button from '../components/Button'
-import { Dumbbell, ChevronRight, Droplets, Flame, UtensilsCrossed, Play } from 'lucide-react'
+import { Dumbbell, Droplets, Flame, UtensilsCrossed, Play } from 'lucide-react'
 
 export default function HomePage() {
   const { routines, sessions, activeSession, waterLogs, mealLogs } = useWorkoutStore()
